@@ -1,10 +1,100 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { request } from "./utils"
 
-class Hello extends React.Component {
+class RootComponent extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {users: []};
+  }
+
+  componentDidMount() {
+    this.getUsers();
+  }
+
+  getUsers() {
+    let self = this;
+    request('/user/').then(function (users) {
+       self.setState({users: users})
+    });
+  }
+
   render() {
-    return <h1>Hello, {this.props.name}</h1>;
+    return (
+        <div className="row">
+          <div className="col-xs-12">
+            <UsersMoneySendForm users={this.state.users}/>
+          </div>
+        </div>
+    );
   }
 }
 
-ReactDOM.render(<Hello />, document.getElementById('container'))
+class UsersMoneySendForm extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {};
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleChange(event) {
+    const target = event.target;
+    const value = target.value;
+    const name = target.name;
+
+    this.setState({
+      [name]: value
+    });
+  }
+
+  handleSubmit(event) {
+    let form = new FormData(document.getElementById('usersMoneySendForm'));
+    request('/user/money_transfer/', {method: 'POST', body: form})
+    event.preventDefault();
+  }
+
+  render() {
+    let options = []
+    this.props.users.forEach(user => options.push(<UserSelectOption user={user} key={user.id} />))
+    return (
+        <form onSubmit={this.handleSubmit} id="usersMoneySendForm">
+          <div className="form-group">
+            <label>Select user:</label>
+            <select value={this.state.usersSelect} onChange={this.handleChange} className="form-control" name="usersSelect">
+              {options}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>INN:</label>
+            <input type="text" className="form-control" value={this.state.inn} name="inn" required />
+            <small class="form-text text-muted">
+              INN list separated with comma ','
+            </small>
+          </div>
+          <div className="form-group">
+            <label>Amount:</label>
+            <input type="number" className="form-control" value={this.state.amount} name="amount" required  />
+          </div>
+          <div className="form-group">
+            <input type="submit" value="Submit" className="btn btn-primary" />
+          </div>
+        </form>
+    );
+  }
+}
+
+class UserSelectOption extends React.Component {
+  render() {
+    return (
+        <option value={this.props.user.id}>{this.props.user.username}</option>
+    );
+  }
+}
+
+
+
+ReactDOM.render(
+  <RootComponent />,
+  document.getElementById('container')
+);

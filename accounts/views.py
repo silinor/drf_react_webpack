@@ -1,10 +1,6 @@
 import logging
-import json
+from decimal import *
 
-from django.conf import settings
-from django.utils import timezone
-from rest_framework.exceptions import MethodNotAllowed, NotFound, \
-    ValidationError
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.viewsets import mixins
 from rest_framework.response import Response
@@ -22,16 +18,29 @@ class UserViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelMixin, mixins.Lis
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
-    # @list_route(['get'])
-    # def my(self, request):
-    #     serializer = BookingListSerializer(
-    #         Booking.objects.my_frontend(request.user).exclude(status=Booking.DELETED).order_by('-created_at'),
-    #         many=True,
-    #         context={'request': self.request}
-    #     )
-    #     return Response(serializer.data)
-
-    # @list_route(['post'])
-    # def my_set_viewed(self, request):
-    #     Booking.objects.my_not_viewed(request.user).update(viewed=True)
-    #     return Response({'not_viewed_count': 0})
+    @list_route(['post'])
+    def money_transfer(self, request):
+        try:
+            user = User.objects.get(pk=request.data['usersSelect'])
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'error': 'user does not exist'})
+        if user.profile.balance < Decimal(request.data['amount']):
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'error': 'not enough funds on user balance'})
+        # check inn input
+        inn_request_list = [x.strip() for x in request.data['inn'].split(sep=',')]
+        inn_profiles = Profile.objects.filter(inn__in=inn_request_list).exclude(user=user)
+        inn_db_list = [profile.inn for profile in inn_profiles]
+        if not all(x in inn_db_list for x in inn_request_list):
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'error': 'wrong INN'})
+        user.profile.balance -= Decimal(request.data['amount'])
+        user.save()
+        total_amount = Decimal(request.data['amount'])
+        amount = round(Decimal(request.data['amount']) / len(inn_db_list), 2)
+        for inn_profile in inn_profiles:
+            if total_amount < amount:
+                # transfer remainder, to avoid funds overruns
+                amount = total_amount
+            inn_profile.balance += amount
+            inn_profile.save()
+            total_amount -= amount
+        return Response({'success'})

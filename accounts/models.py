@@ -9,6 +9,17 @@ class Profile(models.Model):
     inn = models.CharField(max_length=12, blank=True)
     balance = models.DecimalField(decimal_places=2, max_digits=9, null=True, blank=True)
 
+    def save(self, *args, **kwargs):
+        # override save to avoid error, see - https://stackoverflow.com/a/6117457/209050
+        if not self.pk:
+            try:
+                p = Profile.objects.get(user=self.user)
+                self.pk = p.pk
+            except Profile.DoesNotExist:
+                pass
+
+        super(Profile, self).save(*args, **kwargs)
+
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
