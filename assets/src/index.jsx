@@ -33,7 +33,7 @@ class RootComponent extends React.Component {
 class UsersMoneySendForm extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {btnDisable: false, error: false, message: false};
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
@@ -49,8 +49,22 @@ class UsersMoneySendForm extends React.Component {
   }
 
   handleSubmit(event) {
+    let self = this;
+    this.setState({btnDisable: true});
     let form = new FormData(document.getElementById('usersMoneySendForm'));
-    request('/api/user/money_transfer/', {method: 'POST', body: form})
+    request('/api/user/money_transfer/', {method: 'POST', body: form}).then(function (resp) {
+      self.setState({btnDisable: false});
+      if (resp['error']) {
+        self.setState({error: resp['error']});
+      } else {
+        self.setState({error: false});
+      }
+      if (resp['message']) {
+        self.setState({message: resp['message']});
+      } else {
+        self.setState({message: false});
+      }
+    });
     event.preventDefault();
   }
 
@@ -59,6 +73,16 @@ class UsersMoneySendForm extends React.Component {
     this.props.users.forEach(user => options.push(<UserSelectOption user={user} key={user.id} />))
     return (
         <form onSubmit={this.handleSubmit} id="usersMoneySendForm">
+          { this.state.error &&
+            <div className="alert alert-danger">
+              {this.state.error}
+            </div>
+          }
+          { this.state.message &&
+            <div className="alert alert-success">
+              {this.state.message}
+            </div>
+          }
           <div className="form-group">
             <label>Select user:</label>
             <select value={this.state.usersSelect} onChange={this.handleChange} className="form-control" name="usersSelect">
@@ -68,7 +92,7 @@ class UsersMoneySendForm extends React.Component {
           <div className="form-group">
             <label>INN:</label>
             <input type="text" className="form-control" value={this.state.inn} name="inn" required />
-            <small class="form-text text-muted">
+            <small className="form-text text-muted">
               INN list separated with comma ','
             </small>
           </div>
@@ -77,7 +101,7 @@ class UsersMoneySendForm extends React.Component {
             <input type="number" className="form-control" value={this.state.amount} name="amount" required  />
           </div>
           <div className="form-group">
-            <input type="submit" value="Submit" className="btn btn-primary" />
+            <input type="submit" value="Submit" className="btn btn-primary" disabled={this.state.btnDisable} />
           </div>
         </form>
     );
