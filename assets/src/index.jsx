@@ -14,7 +14,7 @@ class RootComponent extends React.Component {
 
   getUsers() {
     let self = this;
-    request('/user/').then(function (users) {
+    request('/api/user/').then(function (users) {
        self.setState({users: users})
     });
   }
@@ -50,7 +50,7 @@ class UsersMoneySendForm extends React.Component {
 
   handleSubmit(event) {
     let form = new FormData(document.getElementById('usersMoneySendForm'));
-    request('/user/money_transfer/', {method: 'POST', body: form})
+    request('/api/user/money_transfer/', {method: 'POST', body: form})
     event.preventDefault();
   }
 

@@ -11,6 +11,6 @@ urlpatterns = [
 ]
 
 router = routers.SimpleRouter()
-router.register(r'user', UserViewSet, base_name='user')
+router.register(r'api/user', UserViewSet, base_name='api-user')
 
 urlpatterns += router.urls

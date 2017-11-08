@@ -43,4 +43,4 @@ class UserViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelMixin, mixins.Lis
             inn_profile.balance += amount
             inn_profile.save()
             total_amount -= amount
-        return Response({'success'})
+        return Response(status=status.HTTP_200_OK, data={'message': 'success'})
